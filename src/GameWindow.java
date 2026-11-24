@@ -220,14 +220,29 @@ public class GameWindow {
         fileChooser.setTitle("Upload Puzzle");
         fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Text Files", "*.txt"));
         File file = fileChooser.showOpenDialog(stage);
+
         if (file != null) {
-            try (Scanner scanner = new Scanner(file)) {
-                int[] newBoard = new int[GameEngine.SIZE * GameEngine.SIZE];
-                for (int i = 0; i < newBoard.length; i++) {
-                    if (scanner.hasNextInt()) newBoard[i] = scanner.nextInt();
+            try {
+                Scanner scanner = new Scanner(file);
+                int[] newBoard = new int[16];
+
+                for (int i = 0; i < 16; i++) {
+                    if (scanner.hasNextInt()) {
+                        newBoard[i] = scanner.nextInt();
+                    } else {
+                        newBoard[i] = 0;
+                    }
                 }
+                scanner.close();
+
                 BattleJoker.client.sendUploadPuzzle(newBoard);
-            } catch (Exception e) {}
+                gameEngine.setBoard(newBoard);
+
+                System.out.println("Puzzle uploaded successfully!");
+            } catch (Exception e) {
+                System.out.println("Failed to upload puzzle");
+                e.printStackTrace();
+            }
         }
     }
 
