@@ -116,6 +116,12 @@ public class Client {
         engine.setScore(score);
         engine.setLevel(level);
         engine.isStarted = (started == 1);
+
+        engine.gameOver = false;
+
+        if (GameWindow.instance != null) {
+            GameWindow.instance.startGameTimer();
+        }
     }
 
     private void handleScores() throws IOException {

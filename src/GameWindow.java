@@ -23,6 +23,8 @@ import java.nio.file.Paths;
 import java.util.Scanner;
 
 public class GameWindow {
+    public static GameWindow instance;
+
     @FXML
     MenuBar menuBar;
 
@@ -62,12 +64,26 @@ public class GameWindow {
     final GameEngine gameEngine = GameEngine.getInstance();
 
     public GameWindow(Stage stage) throws IOException {
+        instance = this;
         loadImages();
 
         FXMLLoader loader = new FXMLLoader(getClass().getResource("mainUI.fxml"));
         loader.setController(this);
         Parent root = loader.load();
         Scene scene = new Scene(root);
+
+        scene.setOnKeyPressed(event -> {
+            String code = event.getCode().toString();
+            if (gameEngine.currentTurnPlayerId == gameEngine.myPlayerId &&
+                    (code.equals("UP") || code.equals("DOWN") || code.equals("LEFT") || code.equals("RIGHT"))) {
+                try {
+                    BattleJoker.client.send(GameEngine.COMMAND, code);
+                } catch (IOException ex) {
+                    System.out.println("Disconnected");
+                    System.exit(-1);
+                }
+            }
+        });
 
         this.stage = stage;
 
@@ -90,33 +106,27 @@ public class GameWindow {
         animationTimer.start();
     }
 
+    public void startGameTimer() {
+        if (animationTimer != null) {
+            animationTimer.start();
+        }
+    }
+
     private void loadImages() throws IOException {
         for (int i = 0; i < symbols.length; i++)
             images[i] = new Image(Files.newInputStream(Paths.get(imagePath + symbols[i] + ".png")));
     }
 
     private void initCanvas() {
-        canvas.setOnKeyPressed(event -> {
-            String code = event.getCode().toString();
-            if (gameEngine.currentTurnPlayerId == gameEngine.myPlayerId &&
-                (code.equals("UP") || code.equals("DOWN") || code.equals("LEFT") || code.equals("RIGHT"))) {
-                try {
-                    BattleJoker.client.send(GameEngine.COMMAND, code);
-                } catch (IOException ex) {
-                    System.out.println("Disconnected");
-                    System.exit(-1);
-                }
-            }
-        });
-
         animationTimer = new AnimationTimer() {
             @Override
             public void handle(long now) {
                 render();
-                updateUI();
                 if (gameEngine.isGameOver()) {
                     System.out.println("Game Over!");
                     animationTimer.stop();
+                } else {
+                    updateUI();
                 }
             }
         };
@@ -185,6 +195,7 @@ public class GameWindow {
     void onStartClicked() {
         try {
             BattleJoker.client.send(GameEngine.COMMAND, "START");
+            canvas.requestFocus();
         } catch (IOException e) {}
     }
 
